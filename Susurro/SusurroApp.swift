@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import CoreData
 import SwiftData
 import SwiftUI
 
@@ -17,7 +18,12 @@ struct SusurroApp: App {
 
     init() {
         let schema = Schema([TranscriptEntry.self, FileTranscript.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        // Never use SwiftData's default store: for a non-sandboxed app that
+        // is the shared ~/Library/Application Support/default.store, which
+        // unrelated processes (notably Apple's icloudmailagent) also open
+        // and destructively re-migrate to their own schema — mid-session
+        // saves then fail and history is wiped.
+        let config = ModelConfiguration(schema: schema, url: Self.prepareStoreURL())
         let modelContainer: ModelContainer
         do {
             modelContainer = try ModelContainer(for: schema, configurations: [config])
@@ -53,6 +59,45 @@ struct SusurroApp: App {
     }
 
     var appController: AppController { appControllerWrapper.controller }
+
+    /// The app's own store under Application Support/Susurro (alongside
+    /// Models/), created on demand.
+    private static func prepareStoreURL() -> URL {
+        let fm = FileManager.default
+        let folder = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Susurro", isDirectory: true)
+        try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        let storeURL = folder.appendingPathComponent("Susurro.store")
+        migrateLegacyStoreIfNeeded(to: storeURL)
+        return storeURL
+    }
+
+    /// Builds up to 0.1.0 kept history in the shared default.store. If that
+    /// file still holds Susurro data (icloudmailagent may already have
+    /// clobbered it), copy it over once so existing history survives.
+    private static func migrateLegacyStoreIfNeeded(to storeURL: URL) {
+        let fm = FileManager.default
+        guard !fm.fileExists(atPath: storeURL.path) else { return }
+
+        let legacyURL = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("default.store")
+        guard fm.fileExists(atPath: legacyURL.path),
+              let metadata = try? NSPersistentStoreCoordinator.metadataForPersistentStore(
+                  ofType: NSSQLiteStoreType,
+                  at: legacyURL,
+                  options: [NSReadOnlyPersistentStoreOption: true]
+              ),
+              let entityHashes = metadata[NSStoreModelVersionHashesKey] as? [String: Any],
+              entityHashes["TranscriptEntry"] != nil
+        else { return }
+
+        // -wal/-shm must travel with the database or recent rows are lost.
+        for suffix in ["", "-wal", "-shm"] {
+            let source = URL(fileURLWithPath: legacyURL.path + suffix)
+            guard fm.fileExists(atPath: source.path) else { continue }
+            try? fm.copyItem(at: source, to: URL(fileURLWithPath: storeURL.path + suffix))
+        }
+    }
 
     var body: some Scene {
         // The main window is a WindowGroup so the system reopens it when the
