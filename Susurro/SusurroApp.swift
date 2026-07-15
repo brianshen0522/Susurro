@@ -14,6 +14,7 @@ struct SusurroApp: App {
     @StateObject private var navigationModel = NavigationModel()
     @StateObject private var fileTranscriptionService: FileTranscriptionService
     @StateObject private var updateManager = UpdateManager()
+    @StateObject private var dockIconController = DockIconController()
     let sharedModelContainer: ModelContainer
 
     init() {

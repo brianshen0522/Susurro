@@ -277,6 +277,18 @@ struct SettingsView: View {
                 String(localized: "settings.showInMenuBar", defaultValue: "Show in Menu Bar"),
                 isOn: $showInMenuBar
             )
+            .disabled(settingsStore.hideDockIcon)
+
+            Toggle(
+                String(localized: "settings.hideDockIcon", defaultValue: "Hide Dock Icon (Run in Background)"),
+                isOn: $settingsStore.hideDockIcon
+            )
+            Text(String(
+                localized: "settings.hideDockIcon.hint",
+                defaultValue: "Susurro leaves the Dock and keeps running in the menu bar once its windows are closed. The menu bar icon stays on so the app remains reachable."
+            ))
+            .foregroundStyle(.secondary)
+            .font(.caption)
 
             Picker(String(localized: "settings.theme", defaultValue: "Appearance"), selection: $settingsStore.theme) {
                 ForEach(AppTheme.allCases) { theme in

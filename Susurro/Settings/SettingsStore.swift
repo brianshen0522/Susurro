@@ -16,6 +16,7 @@ final class SettingsStore: ObservableObject {
     @AppStorage("pauseMediaDuringDictation") var pauseMediaDuringDictation: Bool = true
     @AppStorage("textInsertionMode") var textInsertionModeRaw: String = TextInsertionMode.simulateTyping.rawValue
     @AppStorage("chineseScriptPreference") var chineseScriptPreferenceRaw: String = ChineseScriptPreference.auto.rawValue
+    @AppStorage("hideDockIcon") var hideDockIcon: Bool = false
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
 
     var transcriptionSource: TranscriptionSource {
