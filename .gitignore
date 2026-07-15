@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+
+# Build artifacts
+build/
+DerivedData/
+
+# Vendored binaries — fetched by Scripts/fetch-vendor.sh, not committed
+Vendor/ffmpeg
+Vendor/yt-dlp
+releases/
+
+# AI assistant config (local only)
+CLAUDE.md

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Sparkle auto-update configuration. -->
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/brianshen0522/Susurro/main/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>udGDBgPYLYfS6M4eMDD3hz33DV163jLoe5E+4cVhFqw=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+</dict>
+</plist>
