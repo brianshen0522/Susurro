@@ -300,7 +300,6 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
-				LM_SKIP_METADATA_EXTRACTION = YES;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Susurro pauses and resumes your media apps while you dictate.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "u00a9 2026 Brian Shen u00b7 MIT License";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Susurro needs microphone access to record audio for transcription.";
@@ -308,6 +307,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LM_SKIP_METADATA_EXTRACTION = YES;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = tw.gugulu.Susurro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -335,7 +335,6 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
-				LM_SKIP_METADATA_EXTRACTION = YES;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Susurro pauses and resumes your media apps while you dictate.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "u00a9 2026 Brian Shen u00b7 MIT License";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Susurro needs microphone access to record audio for transcription.";
@@ -343,6 +342,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				LM_SKIP_METADATA_EXTRACTION = YES;
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = tw.gugulu.Susurro;
 				PRODUCT_NAME = "$(TARGET_NAME)";
