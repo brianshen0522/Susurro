@@ -68,9 +68,28 @@ built-in update window. Settings → Updates has a manual "Check for Updates"
 button, an automatic-check toggle, and a beta-channel opt-out for when
 stable releases exist.
 
-Maintainers cut a release with `Scripts/make-release.sh` (build → zip →
-EdDSA-sign → regenerate `appcast.xml`), upload the zip to a GitHub Release,
-and commit the updated appcast.
+Maintainers cut a release with `Scripts/make-release.sh` (build → code-sign →
+zip → EdDSA-sign → regenerate `appcast.xml`), upload the zip to a GitHub
+Release, and commit the updated appcast.
+
+**Permissions survive updates.** Every release is code-signed with the same
+certificate, which gives the app a stable identity in macOS's permission
+system (TCC) — your Accessibility and Microphone grants carry over across
+updates instead of resetting each time.
+
+### First launch of a downloaded build
+
+Release builds are not notarized by Apple (that requires a paid Developer
+account), so Gatekeeper flags the **first** launch of a downloaded copy.
+Either:
+
+- open **System Settings → Privacy & Security** and click **Open Anyway**
+  after the blocked-launch prompt, or
+- clear the quarantine flag in Terminal:
+  `xattr -d com.apple.quarantine /Applications/Susurro.app`
+
+This is one-time: updates installed through Sparkle don't go through
+Gatekeeper again. Building from source avoids it entirely.
 
 ## Requirements
 
