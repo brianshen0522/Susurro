@@ -1,4 +1,5 @@
 import Foundation
+import NaturalLanguage
 
 struct WhisperModelSize: RawRepresentable, CaseIterable, Codable, Hashable, Identifiable, Sendable {
     let rawValue: String
@@ -260,6 +261,67 @@ enum AppTheme: String, Codable, CaseIterable, Identifiable {
         case .dark: return String(localized: "theme.dark", defaultValue: "Dark")
         case .system: return String(localized: "theme.system", defaultValue: "System")
         }
+    }
+}
+
+/// Whisper has no notion of Traditional vs Simplified Chinese — its language
+/// token is just `zh` — so the script of a Chinese transcript is effectively
+/// random. A fixed preference forces one script via ICU transliteration
+/// applied after transcription (dictation and file jobs alike).
+enum ChineseScriptPreference: String, Codable, CaseIterable, Identifiable {
+    case auto
+    case traditional
+    case simplified
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .auto: return String(localized: "chineseScript.auto", defaultValue: "As Transcribed")
+        case .traditional: return String(localized: "chineseScript.traditional", defaultValue: "繁體中文")
+        case .simplified: return String(localized: "chineseScript.simplified", defaultValue: "简体中文")
+        }
+    }
+
+    /// Converts `text` when a fixed script is preferred and the text is
+    /// Chinese. Non-Chinese text passes through untouched — the Han
+    /// transliterator would otherwise mangle Japanese kanji (学校 → 學校).
+    func normalize(_ text: String) -> String {
+        guard self != .auto, !text.isEmpty, Self.isChinese(text) else { return text }
+        return convert(text)
+    }
+
+    /// Rewrites Chinese segments in place, deciding once for the whole
+    /// transcript. `languageCode` is Whisper's detected language (`"zh"`);
+    /// when absent the joined text is language-detected instead.
+    func normalizeSegments(_ segments: [SubtitleSegment], languageCode: String?) -> [SubtitleSegment] {
+        guard self != .auto, !segments.isEmpty else { return segments }
+        let isChinese = if let languageCode {
+            languageCode == "zh" || languageCode.hasPrefix("zh-")
+        } else {
+            Self.isChinese(segments.map(\.text).joined(separator: " "))
+        }
+        guard isChinese else { return segments }
+        return segments.map { SubtitleSegment(start: $0.start, end: $0.end, text: convert($0.text)) }
+    }
+
+    /// Script conversion without any language check; callers must already
+    /// know the text is Chinese.
+    private func convert(_ text: String) -> String {
+        let transform: StringTransform
+        switch self {
+        case .auto: return text
+        case .traditional: transform = StringTransform("Hans-Hant")
+        case .simplified: transform = StringTransform("Hant-Hans")
+        }
+        return text.applyingTransform(transform, reverse: false) ?? text
+    }
+
+    private static func isChinese(_ text: String) -> Bool {
+        let recognizer = NLLanguageRecognizer()
+        recognizer.processString(String(text.prefix(500)))
+        guard let language = recognizer.dominantLanguage else { return false }
+        return language == .simplifiedChinese || language == .traditionalChinese
     }
 }
 

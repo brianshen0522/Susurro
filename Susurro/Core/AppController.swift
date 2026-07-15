@@ -261,11 +261,12 @@ final class AppController: ObservableObject {
                 guard let engine = transcriptionEngine else {
                     throw TranscriptionError.noModelLoaded
                 }
-                let text = try await engine.transcribe(audio: buffer)
+                let rawText = try await engine.transcribe(audio: buffer)
 
                 try await MainActor.run {
                     self.dictationState = .idle
                     self.mediaPlaybackController.resumePaused()
+                    let text = self.settingsStore.chineseScriptPreference.normalize(rawText)
                     guard !text.isEmpty else { return }
                     self.textInjector.insert(text: text, mode: self.settingsStore.textInsertionMode)
 

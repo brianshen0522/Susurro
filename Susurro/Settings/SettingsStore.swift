@@ -15,6 +15,7 @@ final class SettingsStore: ObservableObject {
     @AppStorage("playSoundOnStartStop") var playSoundOnStartStop: Bool = true
     @AppStorage("pauseMediaDuringDictation") var pauseMediaDuringDictation: Bool = true
     @AppStorage("textInsertionMode") var textInsertionModeRaw: String = TextInsertionMode.simulateTyping.rawValue
+    @AppStorage("chineseScriptPreference") var chineseScriptPreferenceRaw: String = ChineseScriptPreference.auto.rawValue
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
 
     var transcriptionSource: TranscriptionSource {
@@ -37,6 +38,11 @@ final class SettingsStore: ObservableObject {
     var textInsertionMode: TextInsertionMode {
         get { TextInsertionMode(rawValue: textInsertionModeRaw) ?? .simulateTyping }
         set { textInsertionModeRaw = newValue.rawValue }
+    }
+
+    var chineseScriptPreference: ChineseScriptPreference {
+        get { ChineseScriptPreference(rawValue: chineseScriptPreferenceRaw) ?? .auto }
+        set { chineseScriptPreferenceRaw = newValue.rawValue }
     }
 
     var hotkeyMode: HotkeyTriggerMode {

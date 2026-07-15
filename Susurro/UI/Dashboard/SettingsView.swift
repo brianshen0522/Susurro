@@ -183,6 +183,21 @@ struct SettingsView: View {
                 appController.updateTranscriptionEngine()
             }
 
+            Picker(
+                String(localized: "settings.chineseScript", defaultValue: "Chinese Script"),
+                selection: $settingsStore.chineseScriptPreferenceRaw
+            ) {
+                ForEach(ChineseScriptPreference.allCases) { preference in
+                    Text(preference.displayName).tag(preference.rawValue)
+                }
+            }
+            Text(String(
+                localized: "settings.chineseScript.hint",
+                defaultValue: "Whisper picks Traditional or Simplified at random. Choose one to convert every Chinese transcript to that script."
+            ))
+            .foregroundStyle(.secondary)
+            .font(.caption)
+
             if settingsStore.transcriptionSource == .openAIAPI {
                 HStack {
                     if apiKeyVisible {

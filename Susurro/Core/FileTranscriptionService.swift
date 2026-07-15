@@ -101,6 +101,7 @@ final class FileTranscriptionService: ObservableObject {
 
     private let modelManager: ModelManager
     private let modelContext: ModelContext
+    private let settingsStore: SettingsStore
     weak var appController: AppController?
 
     private var processingTask: Task<Void, Never>?
@@ -108,9 +109,10 @@ final class FileTranscriptionService: ObservableObject {
     private var currentCancellationFlag: CancellationFlag?
     private var activityToken: NSObjectProtocol?
 
-    init(modelManager: ModelManager, modelContext: ModelContext) {
+    init(modelManager: ModelManager, modelContext: ModelContext, settingsStore: SettingsStore) {
         self.modelManager = modelManager
         self.modelContext = modelContext
+        self.settingsStore = settingsStore
     }
 
     func enqueue(urls: [URL], options: TranscriptionJobOptions) {
@@ -317,13 +319,16 @@ final class FileTranscriptionService: ObservableObject {
             return
         }
 
-        let segments = results
-            .flatMap { $0.segments }
-            .compactMap { segment -> SubtitleSegment? in
-                let text = Self.cleanSegmentText(segment.text)
-                guard !text.isEmpty else { return nil }
-                return SubtitleSegment(start: Double(segment.start), end: Double(segment.end), text: text)
-            }
+        let segments = settingsStore.chineseScriptPreference.normalizeSegments(
+            results
+                .flatMap { $0.segments }
+                .compactMap { segment -> SubtitleSegment? in
+                    let text = Self.cleanSegmentText(segment.text)
+                    guard !text.isEmpty else { return nil }
+                    return SubtitleSegment(start: Double(segment.start), end: Double(segment.end), text: text)
+                },
+            languageCode: results.first?.language
+        )
 
         let transcript = FileTranscript(
             fileName: mediaURL.lastPathComponent,

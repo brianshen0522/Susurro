@@ -36,7 +36,8 @@ struct SusurroApp: App {
         )
         let fileService = FileTranscriptionService(
             modelManager: models,
-            modelContext: modelContainer.mainContext
+            modelContext: modelContainer.mainContext,
+            settingsStore: settings
         )
         fileService.appController = wrapper.controller
         wrapper.controller.fileTranscriptionService = fileService
