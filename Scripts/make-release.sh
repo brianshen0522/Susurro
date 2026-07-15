@@ -37,14 +37,18 @@ VERSION=$(xcodebuild -project Susurro.xcodeproj -scheme Susurro -showBuildSettin
     | awk -F' = ' '/MARKETING_VERSION/ {print $2; exit}')
 echo "Building Susurro $VERSION (channel: $CHANNEL, identity: $SIGN_IDENTITY)…"
 
+# Build in the default (Xcode-shared) DerivedData so SwiftPM only ever
+# resolves packages in one place — a second resolution corrupts the binary
+# artifact cache.
 xcodebuild -project Susurro.xcodeproj -scheme Susurro -configuration Release \
-    -derivedDataPath build/DerivedData \
     CODE_SIGN_STYLE=Manual \
     CODE_SIGN_IDENTITY="$SIGN_IDENTITY" \
     DEVELOPMENT_TEAM="" \
     build | grep -E "error:|warning: code sign|BUILD" || true
 
-APP="build/DerivedData/Build/Products/Release/Susurro.app"
+PRODUCTS_DIR=$(xcodebuild -project Susurro.xcodeproj -scheme Susurro -configuration Release \
+    -showBuildSettings 2>/dev/null | awk -F' = ' '/ BUILT_PRODUCTS_DIR/ {print $2; exit}')
+APP="$PRODUCTS_DIR/Susurro.app"
 [ -d "$APP" ] || { echo "error: build failed, $APP not found" >&2; exit 1; }
 
 echo "Verifying signature…"
@@ -67,7 +71,28 @@ GENERATE_APPCAST=$(find ~/Library/Developer/Xcode/DerivedData/Susurro-*/SourcePa
     releases/
 
 cp releases/appcast.xml appcast.xml
+
+# Human-facing DMG (Sparkle updates use the zip). dist/ keeps it away from
+# generate_appcast's scan of releases/.
+mkdir -p dist
+DMG="dist/Susurro-$VERSION.dmg"
+rm -f "$DMG"
+echo "Creating DMG…"
+create-dmg \
+    --volname "Susurro" \
+    --background "Assets/dmg-background.png" \
+    --window-size 660 440 \
+    --icon-size 128 \
+    --text-size 13 \
+    --icon "Susurro.app" 165 200 \
+    --app-drop-link 495 200 \
+    --hide-extension "Susurro.app" \
+    --no-internet-enable \
+    "$DMG" \
+    "$APP"
+codesign --force --sign "$SIGN_IDENTITY" "$DMG"
+
 echo ""
 echo "Done. Next steps:"
-echo "  1. gh release create v$VERSION $ZIP --title \"Susurro $VERSION\" --prerelease"
+echo "  1. gh release create v$VERSION $DMG $ZIP --title \"Susurro $VERSION\" --prerelease"
 echo "  2. git add appcast.xml && git commit -m \"Release $VERSION\" && git push"

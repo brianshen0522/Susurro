@@ -1,0 +1,16 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Susurro</title>
+        <item>
+            <title>0.1.0</title>
+            <pubDate>Wed, 15 Jul 2026 12:19:57 +0800</pubDate>
+            <sparkle:channel>beta</sparkle:channel>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.5</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <enclosure url="https://github.com/brianshen0522/Susurro/releases/download/v0.1.0/Susurro-0.1.0.zip" length="68713303" type="application/octet-stream" sparkle:edSignature="MGjjhCa+/BZDjQi1pVgVql1o/N95n1yfQSuAThxlGipbD9UU+FzU0gQySJgWvLltPrtQJqSHKL1PpqvIvlemCw=="/>
+        </item>
+    </channel>
+</rss>

@@ -16,3 +16,4 @@ releases/
 
 # AI assistant config (local only)
 CLAUDE.md
+dist/
