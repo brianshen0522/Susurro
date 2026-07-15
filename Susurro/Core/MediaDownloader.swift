@@ -241,8 +241,9 @@ enum MediaDownloader {
 }
 
 /// Accumulates pipe data and emits complete lines; the readability handler
-/// delivers arbitrary chunks on a background thread.
-private final class LineSplitter: @unchecked Sendable {
+/// delivers arbitrary chunks on a background thread, so this type opts out
+/// of the project's default MainActor isolation.
+private nonisolated final class LineSplitter: @unchecked Sendable {
     private let lock = NSLock()
     private var buffer = Data()
     private let onLine: (@Sendable (String) -> Void)?
@@ -283,7 +284,7 @@ private final class LineSplitter: @unchecked Sendable {
 }
 
 /// Minimal thread-safe mutable box for values written from process callbacks.
-private final class LockedBox<T>: @unchecked Sendable {
+private nonisolated final class LockedBox<T>: @unchecked Sendable {
     private let lock = NSLock()
     private var stored: T?
 

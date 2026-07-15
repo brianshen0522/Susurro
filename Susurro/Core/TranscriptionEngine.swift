@@ -26,7 +26,7 @@ final class WhisperKitEngine: TranscriptionEngine {
     }
 
     func transcribe(audio: AVAudioPCMBuffer) async throws -> String {
-        guard let kit = await modelManager.getWhisperKit() else {
+        guard let kit = modelManager.getWhisperKit() else {
             throw TranscriptionError.noModelLoaded
         }
 

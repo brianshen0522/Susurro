@@ -5,8 +5,10 @@ import SwiftData
 import SwiftUI
 import WhisperKit
 
-/// Thread-safe cancellation flag readable from WhisperKit's callback threads.
-private final class CancellationFlag: @unchecked Sendable {
+/// Thread-safe cancellation flag readable from WhisperKit's callback
+/// threads; `nonisolated` opts it out of the project's default MainActor
+/// isolation.
+private nonisolated final class CancellationFlag: @unchecked Sendable {
     private let lock = NSLock()
     private var value = false
 
