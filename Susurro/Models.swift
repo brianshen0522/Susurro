@@ -77,7 +77,12 @@ struct WhisperModelSize: RawRepresentable, CaseIterable, Codable, Hashable, Iden
     }
 
     private static func isWhisperKitModelID(_ id: String) -> Bool {
-        id.hasPrefix("openai_whisper-") || id.hasPrefix("distil-whisper_")
+        !id.isEmpty
+            && !id.hasPrefix(".")
+            && !id.contains("/")
+            && id.allSatisfy { c in
+                c.isASCII && (c.isLetter || c.isNumber || c == "-" || c == "_" || c == ".")
+            }
     }
 
     static func orderedUnique(_ models: [WhisperModelSize]) -> [WhisperModelSize] {

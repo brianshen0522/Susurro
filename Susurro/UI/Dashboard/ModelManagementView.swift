@@ -64,6 +64,12 @@ struct ModelsSettingsSection: View {
                     .font(.caption)
                     .foregroundStyle(.red)
             }
+
+            Divider()
+
+            CustomModelDownloadSection { urlString in
+                try await modelManager.downloadFromHuggingFaceURL(urlString)
+            }
         }
     }
 
@@ -339,6 +345,74 @@ struct ModelRowView: View {
                     showDeleteConfirm = true
                 }
                 .controlSize(.small)
+            }
+        }
+    }
+}
+
+struct CustomModelDownloadSection: View {
+    let onDownload: (_ urlString: String) async throws -> Void
+
+    @State private var urlString = ""
+    @State private var error: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(String(
+                localized: "model.customURL.title",
+                defaultValue: "Download from URL"
+            ))
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.secondary)
+
+            HStack {
+                TextField(
+                    String(
+                        localized: "model.customURL.placeholder",
+                        defaultValue: "HuggingFace model URL"
+                    ),
+                    text: $urlString
+                )
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { startDownload() }
+
+                Button(String(localized: "model.download", defaultValue: "Download")) {
+                    startDownload()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(trimmedURL.isEmpty)
+            }
+
+            Text("e.g. huggingface.co/argmaxinc/whisperkit-coreml/tree/main/variant-id")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+
+            if let err = error {
+                Text(err)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var trimmedURL: String {
+        urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func startDownload() {
+        let url = trimmedURL
+        guard !url.isEmpty else { return }
+        error = nil
+        let capturedURL = url
+        urlString = ""
+        Task {
+            do {
+                try await onDownload(capturedURL)
+            } catch is CancellationError {
+            } catch {
+                self.error = error.localizedDescription
             }
         }
     }

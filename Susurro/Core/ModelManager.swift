@@ -26,6 +26,7 @@ final class ModelManager: ObservableObject {
     private var downloadAttemptIDs: [WhisperModelSize: UUID] = [:]
     private var downloadTrackingStates: [WhisperModelSize: DownloadTrackingState] = [:]
     private var finishingCancelledDownloads: [WhisperModelSize: CancelledDownload] = [:]
+    private var customModelIDs: Set<String> = []
 
     enum ModelStatus: Equatable, Sendable {
         case notDownloaded
@@ -213,6 +214,161 @@ final class ModelManager: ObservableObject {
         guard downloadAttemptIDs[model] == attemptID else {
             throw CancellationError()
         }
+        clearDownloadAttempt(for: model)
+        modelStatuses[model] = .downloaded
+    }
+
+    func downloadFromHuggingFaceURL(_ urlString: String) async throws {
+        guard let parsed = HuggingFaceModelURL.parse(urlString) else {
+            throw ModelManagerError.downloadFailed(
+                String(localized: "model.customURL.invalid", defaultValue: "Invalid HuggingFace URL.")
+            )
+        }
+
+        guard let model = WhisperModelSize(rawValue: parsed.variantID) else {
+            throw ModelManagerError.downloadFailed(
+                String(localized: "model.customURL.invalidID", defaultValue: "Invalid model identifier: \(parsed.variantID)")
+            )
+        }
+
+        customModelIDs.insert(parsed.variantID)
+
+        if !availableModels.contains(model) {
+            availableModels.append(model)
+            modelStatuses[model] = .notDownloaded
+        }
+
+        if parsed.isOfficialRepo {
+            try await download(model)
+            return
+        }
+
+        try await downloadFromCustomRepo(parsed, model: model)
+    }
+
+    private func downloadFromCustomRepo(
+        _ parsed: HuggingFaceModelURL,
+        model: WhisperModelSize
+    ) async throws {
+        guard modelStatuses[model] ?? .notDownloaded == .notDownloaded else { return }
+
+        try FileManager.default.createDirectory(at: Self.modelsDirectory, withIntermediateDirectories: true)
+
+        let modelFolder = Self.modelFolder(for: model)
+        try FileManager.default.createDirectory(at: modelFolder, withIntermediateDirectories: true)
+
+        let attemptID = UUID()
+        let fallbackTotalBytes = max(Int64(model.approxDiskSizeMB) * 1_000_000, 1)
+
+        downloadAttemptIDs[model] = attemptID
+        downloadTrackingStates[model] = DownloadTrackingState(
+            frameworkFraction: 0, publishedFraction: 0,
+            downloadedBytes: 0, totalBytes: fallbackTotalBytes,
+            isTotalEstimated: true, smoothedBytesPerSecond: nil
+        )
+        publishDownloadProgress(for: model)
+
+        struct FileEntry: Decodable, Sendable { let path: String; let size: Int64? }
+
+        let treeURLString = "https://huggingface.co/api/models/\(parsed.repoFullName)/tree/\(parsed.branch)/\(parsed.variantID)?recursive=true&expand=false"
+        guard let treeURL = URL(string: treeURLString) else {
+            clearDownloadAttempt(for: model); modelStatuses[model] = .notDownloaded
+            throw ModelManagerError.downloadFailed("Failed to build file tree URL.")
+        }
+
+        let (treeData, treeResponse) = try await URLSession.shared.data(from: treeURL)
+        guard let httpResponse = treeResponse as? HTTPURLResponse,
+              (200..<300).contains(httpResponse.statusCode) else {
+            clearDownloadAttempt(for: model); modelStatuses[model] = .notDownloaded
+            throw ModelManagerError.downloadFailed(
+                String(localized: "model.customURL.treeFetchFailed", defaultValue: "Could not fetch file list. Check the URL.")
+            )
+        }
+
+        let files: [FileEntry]
+        do {
+            files = try JSONDecoder().decode([FileEntry].self, from: treeData)
+        } catch {
+            clearDownloadAttempt(for: model); modelStatuses[model] = .notDownloaded
+            throw ModelManagerError.downloadFailed("Failed to parse file list.")
+        }
+
+        let variantFiles = files.filter { $0.path.hasPrefix(parsed.variantID + "/") }
+        guard !variantFiles.isEmpty else {
+            clearDownloadAttempt(for: model); modelStatuses[model] = .notDownloaded
+            throw ModelManagerError.downloadFailed(
+                String(localized: "model.customURL.noFiles", defaultValue: "No files found for this variant.")
+            )
+        }
+
+        let totalSize = variantFiles.compactMap(\.size).reduce(Int64(0), +)
+        if totalSize > 0 {
+            recordExactTotalBytes(totalSize, for: model, attemptID: attemptID)
+        }
+
+        let task = Task<Void, Error> {
+            var totalDownloaded: Int64 = 0
+            let baseURL = "https://huggingface.co/\(parsed.repoFullName)/resolve/\(parsed.branch)/"
+            let fm = FileManager.default
+
+            for file in variantFiles {
+                try Task.checkCancellation()
+                guard self.downloadAttemptIDs[model] == attemptID else { throw CancellationError() }
+
+                let relativePath = String(file.path.dropFirst(parsed.variantID.count + 1))
+                let destinationURL = modelFolder.appendingPathComponent(relativePath)
+                try fm.createDirectory(at: destinationURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+
+                guard let fileURL = URL(string: baseURL + file.path) else { continue }
+
+                let (tempURL, fileResponse) = try await URLSession.shared.download(from: fileURL)
+                guard let httpResp = fileResponse as? HTTPURLResponse,
+                      (200..<300).contains(httpResp.statusCode) else {
+                    throw ModelManagerError.downloadFailed("Failed to download \(relativePath)")
+                }
+
+                if fm.fileExists(atPath: destinationURL.path) {
+                    try fm.removeItem(at: destinationURL)
+                }
+                try fm.moveItem(at: tempURL, to: destinationURL)
+
+                if let size = file.size { totalDownloaded += size }
+
+                guard self.downloadAttemptIDs[model] == attemptID else { throw CancellationError() }
+                self.recordDownloadedBytes(
+                    totalDownloaded,
+                    frameworkFraction: Double(totalDownloaded) / Double(max(totalSize, 1)),
+                    rawBytesPerSecond: nil,
+                    for: model,
+                    attemptID: attemptID
+                )
+            }
+
+            guard self.downloadAttemptIDs[model] == attemptID else { throw CancellationError() }
+            try ModelDownloadFiles.writeCompletionMarker(in: modelFolder, named: Self.completionMarkerName)
+        }
+
+        downloadTasks[model] = task
+
+        do {
+            try await withTaskCancellationHandler {
+                try await task.value
+            } onCancel: {
+                task.cancel()
+            }
+        } catch {
+            let isCurrentAttempt = downloadAttemptIDs[model] == attemptID
+            if isCurrentAttempt {
+                clearDownloadAttempt(for: model)
+                modelStatuses[model] = .notDownloaded
+            }
+            if !isCurrentAttempt || Task.isCancelled || Self.isCancellation(error) {
+                throw CancellationError()
+            }
+            throw error
+        }
+
+        guard downloadAttemptIDs[model] == attemptID else { throw CancellationError() }
         clearDownloadAttempt(for: model)
         modelStatuses[model] = .downloaded
     }
@@ -433,9 +589,13 @@ final class ModelManager: ObservableObject {
         let supportedModels = remoteSupport.supported
             .compactMap(WhisperModelSize.init(rawValue:))
             .filter(\.isMultilingual)
-        let mergedModels = WhisperModelSize.smallestVariants(
+        let catalogModels = WhisperModelSize.smallestVariants(
             WhisperModelSize.allCases + supportedModels + Self.downloadedModels()
         )
+        let customModels: [WhisperModelSize] = customModelIDs
+            .compactMap(WhisperModelSize.init(rawValue:))
+            .filter { !catalogModels.contains($0) }
+        let mergedModels = catalogModels + customModels
 
         for model in mergedModels where modelStatuses[model] == nil {
             modelStatuses[model] = diskStatus(for: model)
@@ -661,5 +821,29 @@ private enum ModelDownloadRemoteMetadata {
         } catch {
             return nil
         }
+    }
+}
+
+private struct HuggingFaceModelURL: Sendable {
+    let repoFullName: String
+    let branch: String
+    let variantID: String
+
+    var isOfficialRepo: Bool { repoFullName == "argmaxinc/whisperkit-coreml" }
+
+    static func parse(_ urlString: String) -> HuggingFaceModelURL? {
+        guard let url = URL(string: urlString),
+              let host = url.host,
+              host == "huggingface.co" else { return nil }
+
+        let segments = url.pathComponents.filter { $0 != "/" }
+        guard segments.count >= 5,
+              segments[2] == "tree" else { return nil }
+
+        return HuggingFaceModelURL(
+            repoFullName: "\(segments[0])/\(segments[1])",
+            branch: segments[3],
+            variantID: segments[4]
+        )
     }
 }
