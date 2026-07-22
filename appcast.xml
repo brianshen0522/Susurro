@@ -7,12 +7,12 @@
             <pubDate>Thu, 16 Jul 2026 08:09:22 +0800</pubDate>
             <sparkle:channel>beta</sparkle:channel>
             <sparkle:version>2</sparkle:version>
-            <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+            <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.5</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <enclosure url="https://github.com/brianshen0522/Susurro/releases/download/v0.2.0/Susurro-0.2.0.zip" length="68753750" type="application/octet-stream" sparkle:edSignature="9Kli/DZJoPSuG0UuUuqCmvvcHjL/iuoN/w1BcWxkGJkpb3+z7BkNspn1Ua6/aQ1yzR3F/gNCnC9xg4UQCC9vDQ=="/>
+            <enclosure url="https://github.com/brianshen0522/Susurro/releases/download/v0.3.0/Susurro-0.3.0.zip" length="68753752" type="application/octet-stream" sparkle:edSignature="UBVOT3q0ZsiIbveIHLwJkZ8ktphOg4g25Z9KfjaAB8jsjj1HTqbvLLC1yUGfhAN4LWr8UUZsCoJN6uxgDEDECA=="/>
             <sparkle:deltas>
-                <enclosure url="https://github.com/brianshen0522/Susurro/releases/download/v0.2.0/Susurro2-1.delta" sparkle:deltaFrom="1" length="264602" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977712" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="9YG+dDxQzgx9eue6uXnzLIp0qMS8UopKaMC78DPjsGfYqvXYgak5T7KOHa63wmkNDKCFWw1IC15g/lQhK48wBA=="/>
+                <enclosure url="https://github.com/brianshen0522/Susurro/releases/download/v0.3.0/Susurro2-1.delta" sparkle:deltaFrom="1" length="264602" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977712" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="9YG+dDxQzgx9eue6uXnzLIp0qMS8UopKaMC78DPjsGfYqvXYgak5T7KOHa63wmkNDKCFWw1IC15g/lQhK48wBA=="/>
             </sparkle:deltas>
         </item>
         <item>
@@ -23,7 +23,7 @@
             <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>26.5</sparkle:minimumSystemVersion>
             <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
-            <enclosure url="https://github.com/brianshen0522/Susurro/releases/download/v0.2.0/Susurro-0.1.0.zip" length="68713303" type="application/octet-stream" sparkle:edSignature="MGjjhCa+/BZDjQi1pVgVql1o/N95n1yfQSuAThxlGipbD9UU+FzU0gQySJgWvLltPrtQJqSHKL1PpqvIvlemCw=="/>
+            <enclosure url="https://github.com/brianshen0522/Susurro/releases/download/v0.3.0/Susurro-0.1.0.zip" length="68713303" type="application/octet-stream" sparkle:edSignature="MGjjhCa+/BZDjQi1pVgVql1o/N95n1yfQSuAThxlGipbD9UU+FzU0gQySJgWvLltPrtQJqSHKL1PpqvIvlemCw=="/>
         </item>
     </channel>
 </rss>
