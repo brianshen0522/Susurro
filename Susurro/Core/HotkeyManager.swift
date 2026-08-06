@@ -122,8 +122,9 @@ final class HotkeyManager {
         guard type == .flagsChanged else { return }
 
         let flags = event.flags
-        print("[HotkeyManager] flagsChanged: flags=\(flags.rawValue) maskSecondaryFn=\(flags.contains(.maskSecondaryFn))")
-        let isKeyDown = isKeyDown(flags: flags, key: key)
+        let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
+        print("[HotkeyManager] flagsChanged: flags=\(flags.rawValue) keyCode=\(keyCode) maskSecondaryFn=\(flags.contains(.maskSecondaryFn))")
+        let isKeyDown = isKeyDown(flags: flags, keyCode: keyCode, key: key)
 
         if isKeyDown && pressStartTime == nil {
             pressStartTime = Date()
@@ -136,14 +137,17 @@ final class HotkeyManager {
         }
     }
 
-    private func isKeyDown(flags: CGEventFlags, key: HotkeyKey) -> Bool {
+    private func isKeyDown(flags: CGEventFlags, keyCode: CGKeyCode, key: HotkeyKey) -> Bool {
         switch key {
         case .fn:
             return flags.contains(.maskSecondaryFn)
         case .rightCommand:
-            return flags.contains(.maskCommand)
+            // kVK_RightCommand (54); a flagsChanged for the left ⌘ (55)
+            // carries the same .maskCommand but a different keyCode.
+            return flags.contains(.maskCommand) && keyCode == 54
         case .rightOption:
-            return flags.contains(.maskAlternate)
+            // kVK_RightOption (61) vs left ⌥ (58).
+            return flags.contains(.maskAlternate) && keyCode == 61
         case .f13:
             return false
         }
